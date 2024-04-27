@@ -3,9 +3,9 @@
 % First release, 2024-04-25, v2.0
 % Forked, 2024-04-25, v1.0
 
-%Unauthorized copy and sharing is prohibited
-
-% Ignored roll steer, (3d geometry effect -> on kpi,caster effect to camber, roll steer), roll center change, cog height change effect by anti geometry
+% Ignored roll steer, (3d geometry effect -> on kpi,caster effect to
+% camber, roll steer), roll center change, cog height change effect by anti
+% geometry, camber change by longitudinal acceleration
 % MUST BE IMPLEMENTED IN FUTURE!
 
 % If you change the suspension geometry, go to camber function and change
@@ -136,13 +136,18 @@ for s = 1:length(s_space)
         a_space(s,b) = a1; 
     end
     plot(a_space(s,1:end),n_space(s,1:end),'Color','red')
+    text(a_space(s,(length(b_space)+1)/2),n_space(s,(length(b_space)+1)/2),num2str(s_space(s)),'Color','red')
     hold on
 end
 
 for b = 1:length(b_space)
     plot(a_space(1:end,b),n_space(1:end,b),'--','Color','blue')
+    text(a_space(1,b),n_space(1,b),num2str(b_space(b)),'Color','blue')
     hold on
 end
+grid on
+ylabel('Oversteer Moment (Nm)') 
+xlabel('Lateral Acceleration (G)')
 
 %% Iterating function, get beta, theta, env and return A, N
 
