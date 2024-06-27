@@ -20,7 +20,7 @@ tyre = MagicFormulaTyre('C:\Users\songy\Desktop\SONG\KAIST\Club\Zilzu\Formula\Su
 % body origin is (0, 0, ride_height)
 % in case of knuckle center is (0, 0, r)
 
-Pressure = 83000; %tyre pressure in Pa
+Pressure = 84000; %tyre pressure in Pa
 Density = 1.225; %environment air density kg/m3
 Area = 1; %frontal area of car m2
 C_d = 1; %drag coefficient of car
@@ -72,27 +72,34 @@ ru2(3) = ru2(3)+rhr;
 
 %% Part 1 for steer geometry
 %must be implemented using coord system in future
+lrack = 0.290; %length of rack
+larm = 0.1; %length of arm at wheel sys
+lrod = 0.40315; %length of steering rod
+rev_pinion = 0.08788; %length of pinion per rev, or 2pi*r 
+d = 0.09; % longitudinal distance from rack to wheel center, always positive dont worry
+rpinion = rev_pinion/(2*pi);
+%{
 lrack = 0.442; %length of rack m
 larm = 0.08; %length of arm at wheel sys m
 lrod = 0.38574; %length of steering rod m
 rev_pinion = 0.08799; %length of pinion per rev, or 2pi*r, m/rev 
 d = 0.075; % longitudinal distance from rack to wheel center, always positive dont worry, m
 rpinion = rev_pinion/(2*pi);
-
+%}
 
 %% Part 2 for mass transfer
-v = 10; % velocity of car, m/s
+v = 13.2; % velocity of car, m/s
 %A = 1.2; % G force
 %beta = 0; % car slip angle, variable
 kfw = 50; %front wheel rate N/mm
-krw = 50; %rear wheel rate N/mm
+krw = 100; %rear wheel rate N/mm
 Ws = 300; %sprung weight kg
 wu = 15; %Unsprung mass of 2 wheel system, kg
-rcf = 0.023; %rollcenter front height, m
-rcr = 0.042; %rollcenter rear height, m
+rcf = 0.063; %rollcenter front height, m
+rcr = 0.043; %rollcenter rear height, m
 l = 1.5; %wheelbase, m
-tf = 1.2; %front track, m
-tr = 1.17; %rear track, m
+tf = 1.215; %front track, m
+tr = 1.2; %rear track, m
 wfr = 0.5; %sprung cog percentage front wfr rear 1-wfr
 cog = 0.35; %cog height, m
 
@@ -123,8 +130,8 @@ toe_r = deg2rad(toe_r);
 %theta = deg2rad(20);
 %[a1, n1] = iterating(beta,theta,tyre,Pressure,Density,wr,Area,C_d,lrack,larm,lrod,rpinion,d,r,kfw,krw,Ws,wuf,wur,rcf,rcr,l,tf,tr,wfr,cog,kpi,caster,toe_f,toe_r)
 
-s_space = [-140, -120, -100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100, 120, 140];
-b_space = [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+s_space = [-120, -100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100, 120];
+b_space = [-8, -7, -6, -5, -4, -3, -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 7, 8];
 n_space = zeros(length(s_space),length(b_space));
 a_space = zeros(length(s_space),length(b_space));
 
@@ -168,8 +175,8 @@ function [acc,n] = iterating(beta,theta,tyre,Pressure,Density,wr,Area,C_d,lrack,
     fr_angle0 = steering(0, lrack, larm, lrod, rpinion, d, tf);
     fl_angle = steering(-theta, lrack, larm, lrod, rpinion, d, tf);
     fr_angle = steering(theta, lrack, larm, lrod, rpinion, d, tf);
-    fl_angle = fl_angle - fl_angle0;
-    fr_angle = fr_angle0 - fr_angle;
+    fl_angle = fl_angle0 - fl_angle;
+    fr_angle = fr_angle - fr_angle0;
 
     while abs(lateral)>50 && count < 50
         count = count + 1;
@@ -177,7 +184,6 @@ function [acc,n] = iterating(beta,theta,tyre,Pressure,Density,wr,Area,C_d,lrack,
 
         %return slip angle of fl, fr, rl, rr
         [wheel_angle_fl,wheel_angle_fr,wheel_angle_rl,wheel_angle_rr,vel_l,vel_r] = slipa(A,v,beta,wfr,tf,tr,l,toe_f,toe_r,fl_angle,fr_angle);
-        
         [load_fl,load_fr,load_rl,load_rr,roll] = loading(Ws, wr, wuf, wur, kfw, krw, tf, tr, rcf, rcr, l, cog, wfr, A, beta);
         
         camber_fl = camber(roll, 'f', 'l') + cambersteer(kpi,caster,fl_angle);
@@ -192,20 +198,23 @@ function [acc,n] = iterating(beta,theta,tyre,Pressure,Density,wr,Area,C_d,lrack,
         [t_fl,f_fl,mz_fl] = magicformula(tyre, 0, wheel_angle_fl, load_fl, Pressure, camber_fl, v);
         [t_fr,f_fr,mz_fr] = magicformula(tyre, 0, wheel_angle_fr, load_fr, Pressure, camber_fr, v);
         
+        f_fl = -f_fl;
+        f_fr = -f_fr;
+
         drag_i_f = f_fl*sin(fl_angle+toe_f)+f_fr*sin(fr_angle-toe_f);
         lateral_f = +f_fl*cos(fl_angle+toe_f)+f_fr*cos(fr_angle-toe_f)+t_fl*sin(fl_angle+toe_f)+t_fr*sin(fr_angle-toe_f);
         drag_aero = 0.5*Density*v*v*Area*C_d;
         
-        sr0 = -0.2;
-        sr1 = 0.2;
+        sr0 = -0.15;
+        sr1 = 0.15;
         sr_t = 0;
         it_count = 0;
-        thrust = 10;
+        thrust = 1000;
         thrust0 = 0;
         thrust1 = 0;
         thrust_t = 0;
 
-        while abs(thrust)>1 %&it_count < 10
+        while abs(thrust)>10 && it_count < 20
             it_count = it_count + 1;
             if it_count == 1
                 sr = sr0;
@@ -228,8 +237,12 @@ function [acc,n] = iterating(beta,theta,tyre,Pressure,Density,wr,Area,C_d,lrack,
 
             [t_rl,f_rl,mz_rl] = magicformula(tyre, sr, wheel_angle_rl, load_rl, Pressure, camber_rl, v);
             [t_rr,f_rr,mz_rr] = magicformula(tyre, sr_r, wheel_angle_rr, load_rr, Pressure, camber_rr, v);
+
+            f_rl = -f_rl;
+            f_rr = -f_rr;
+
             drag_i_r = +f_rl*sin(toe_f)+f_rr*sin(-toe_f);
-            thrust = -t_fl*cos(fl_angle+toe_f)-t_fr*cos(fr_angle-toe_f)+drag_i_f+drag_i_r+drag_aero-t_rl*cos(toe_r)-t_rr*cos(toe_r)-(Ws+wuf+wur)*A*9.8*sin(beta);
+            thrust = +t_fl*cos(fl_angle+toe_f)+t_fr*cos(fr_angle-toe_f)-drag_i_f-drag_i_r-drag_aero+t_rl*cos(toe_r)+t_rr*cos(toe_r)+(Ws+wuf+wur)*A*9.8*sin(beta);
             %we removed f=ma so if it is minus, need less thrust and if plus,
             %need more thrust
             if it_count == 1
@@ -255,7 +268,7 @@ function [acc,n] = iterating(beta,theta,tyre,Pressure,Density,wr,Area,C_d,lrack,
     end
 
     acc = A;
-    n = (wfr*l)*lateral_f - (1-wfr)*l*lateral_r+ (tf/2)*(t_fl*cos(fl_angle+toe_f)-t_fr*cos(fr_angle-toe_f))+ (tr/2)*(t_rl*cos(toe_r)-t_rr*cos(toe_r)) +mz_fl+mz_fr+mz_rl+mz_rr;
+    n = (wfr*l)*lateral_f - (1-wfr)*l*lateral_r+ (tf/2)*(t_fl*cos(fl_angle+toe_f)-t_fr*cos(fr_angle-toe_f))+ (tr/2)*(t_rl*cos(toe_r)-t_rr*cos(toe_r)) -mz_fl-mz_fr-mz_rl-mz_rr;
     %Positive is -z axis moment, which leads to oversteer
 
 %[FX, FY, MZ, MY, MX] = magicformula(tyre, slipratio, slipangle, FZ, Pressure, Camber, Velocity)
@@ -264,10 +277,12 @@ end
 %% Slip angle by r
 
 function [afl,afr,arl,arr,vl,vr] = slipa(A,v,beta,wfr,tf,tr,l,toe_f,toe_r,fl_a,fr_a)
-    omega = A/v;
+    r = v^2/9.8/abs(A);    
 
     vy = v*sin(beta);
     vx = v*cos(beta);
+    %omega = sign(A)*vx/r;
+    omega = A/vx;
     %if alpha is positive right, negative left 
     afl = atan((vy+omega*wfr*l)/(vx+omega*tf/2)) - toe_f - fl_a;
     afr = atan((vy+omega*wfr*l)/(vx-omega*tf/2)) + toe_f - fr_a;
@@ -288,6 +303,15 @@ end
 %% Loading distribution
 function [fl,fr,rl,rr, roll] = loading(Ws, wr, wuf, wur, kfw, krw, tf, tr, rcf, rcr, l, cog, wfr, A, beta)
 
+    if (A < 0)
+        [fl0,fr0,rl0,rr0, roll0] = loading(Ws, wr, wuf, wur, kfw, krw, tf, tr, rcf, rcr, l, cog, wfr, -A, -beta);
+        fl=fr0;
+        fr=fl0;
+        rl=rr0;
+        rr=rl0;
+        roll=-roll0;
+    else
+
     Ay = A*cos(beta);
     Ax = A*sin(beta);
 
@@ -300,23 +324,27 @@ function [fl,fr,rl,rr, roll] = loading(Ws, wr, wuf, wur, kfw, krw, tf, tr, rcf, 
     
     roll = -Ay * (-Ws*h2) / (Kf+Kr-Ws*h2);
     
+    longt = cog/l * Ax * (Ws+wuf+wur); %longitudinal mass transfer
+
+    wfr = (wfr*Ws-longt)/Ws;
+    
     fmt = Ay*Ws/tf*( h2*(Kf-(1-wfr)*Ws*h2)/(Kf+Kr-Ws*h2) + (1-wfr)*rcf ) + wuf/tf*wr; %front mass transfer in N
     
     frt = Ay*Ws/tr*( h2*(Kf-wfr*Ws*h2)/(Kf+Kr-Ws*h2) + wfr*rcr ) + wur/tr*wr; %rear mass transfer in N
     
-    longt = cog/l * Ax * (Ws+wuf+wur); %longitudinal mass transfer
-    
     fl = wuf/2 + Ws*(1-wfr)/2 + fmt/2;
-    fl = fl - longt;
+    fl = fl + longt/2;
     
     fr = wuf/2 + Ws*(1-wfr)/2 - fmt/2;
-    fr = fr - longt;
+    fr = fr + longt/2;
     
     rl = wur/2 + Ws*wfr/2 + frt/2;
-    rl = rl + longt;
+    rl = rl - longt/2;
     
     rr = wur/2 + Ws*wfr/2 - frt/2;
-    rr = rr + longt;
+    rr = rr - longt/2;
+
+    end
 
     if rr <= 0
         rr = 1;
@@ -344,7 +372,7 @@ function c = camber(roll, fr, lr)
     end
 
     if fr == 'f'
-        c = 0.62*a*rad2deg(roll)-1;
+        c = 0.43*a*rad2deg(roll)-0.98;
     elseif fr == 'r'
         c = 0.72*a*rad2deg(roll)-0.89;
     end

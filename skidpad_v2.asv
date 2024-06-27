@@ -73,27 +73,36 @@ ru2(3) = ru2(3)+rhr;
 
 %% Part 1 for steer geometry
 %must be implemented using coord system in future
-
+%{
 lrack = 0.290; %length of rack
 larm = 0.1; %length of arm at wheel sys
 lrod = 0.40302; %length of steering rod
 rev_pinion = 0.08788; %length of pinion per rev, or 2pi*r 
 d = 0.09; % longitudinal distance from rack to wheel center, always positive dont worry
 rpinion = rev_pinion/(2*pi);
+%}
+lrack = 0.442; %length of rack m
+larm = 0.08; %length of arm at wheel sys m
+lrod = 0.38574; %length of steering rod m
+rev_pinion = 0.08799; %length of pinion per rev, or 2pi*r, m/rev 
+d = 0.075; % longitudinal distance from rack to wheel center, always positive dont worry, m
+rpinion = rev_pinion/(2*pi);
 
 %% Part 2 for mass transfer
 r = 9; %radius of skidpad, m
 %A = 1.2; % G force
 %beta = 0; % car slip angle, variable. If positive, car point outward
-kfw = 50; %front wheel rate N/mm
+kfw = 100; %front wheel rate N/mm
 krw = 50; %rear wheel rate N/mm
 Ws = 300; %sprung weight kg
 wu = 15; %Unsprung mass of 2 wheel system, kg
 rcf = 0.063; %rollcenter front height, m
 rcr = 0.043; %rollcenter rear height, m
 l = 1.5; %wheelbase, m
-tf = 1.213; %front track, m
-tr = 1.2; %rear track, m
+%tf = 1.213; %front track, m
+%tr = 1.2; %rear track, m
+tf = 1.2;
+tr = 1.17;
 wfr = 0.5; %sprung cog percentage front wfr rear 1-wfr
 cog = 0.35; %cog height, m
 
@@ -124,10 +133,10 @@ toe_r = deg2rad(toe_r);
 %theta = deg2rad(20);
 %[a1, n1] = iterating(beta,theta,tyre,Pressure,Density,wr,Area,C_d,lrack,larm,lrod,rpinion,d,r,kfw,krw,Ws,wuf,wur,rcf,rcr,l,tf,tr,wfr,cog,kpi,caster,toe_f,toe_r)
 
-s_space = [-80, -60, -40, -20, 0, 20, 40, 60, 80];
-b_space = [-8, -7, -6, -5, -4, -3, -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 7, 8];
-%s_space = [80,60,40,20,10,6,2,0,-10,-30];
-%b_space = [10,9,8,6,4,2,1,0.5,0,-2,-4, -6, -10];
+%s_space = [-120, -100, -80, -60, -40, -20, 0, 20, 40, 60, 80, 100, 120];
+%b_space = [-8, -7, -6, -5, -4, -3, -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 7, 8];
+s_space = [80,60,40,20,10,6,2,0,-10,-30];
+b_space = [10,9,8,6,4,2,1,0.5,0,-2,-4, -6, -10];
 
 %s_space = [80];
 %b_space = [6];
@@ -379,8 +388,7 @@ function [afl,afr,arl,arr,vl,vr] = slipa(A,r,beta,wfr,tf,tr,l,toe_f,toe_r,fl_a,f
     
     vy = v*sin(beta);
     vx = v*cos(beta);
-    %omega = sign(A)*vx/r;
-    omega = A/vx;
+    omega = sign(A)*vx/r;
 
     %if alpha is positive right, negative left 
     afl = atan((vy+omega*wfr*l)/(vx+omega*tf/2)) - toe_f - fl_a;
@@ -429,7 +437,7 @@ function [fl,fr,rl,rr, roll] = loading(Ws, wr, wuf, wur, kfw, krw, tf, tr, rcf, 
     
     fmt = Ay*Ws/tf*( h2*(Kf-(1-wfr)*Ws*h2)/(Kf+Kr-Ws*h2) + (1-wfr)*rcf ) + wuf/tf*wr; %front mass transfer in N
     
-    frt = Ay*Ws/tr*( h2*(Kr-wfr*Ws*h2)/(Kf+Kr-Ws*h2) + wfr*rcr ) + wur/tr*wr; %rear mass transfer in N
+    frt = Ay*Ws/tr*( h2*(Kf-wfr*Ws*h2)/(Kf+Kr-Ws*h2) + wfr*rcr ) + wur/tr*wr; %rear mass transfer in N
     
     fl = wuf/2 + Ws*(1-wfr)/2 + fmt/2;
     fl = fl + longt/2;
